@@ -27,4 +27,12 @@ public class ProductController {
         repository.save(newProduct);
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping
+    public ResponseEntity updateProject(@RequestBody @Validated RequestProduct data){
+        Product product = repository.getReferenceById(data.id());
+        product.setName(data.name());
+        product.setPrice_in_cents(data.price_in_cents());
+        return ResponseEntity.ok(product);
+    }
 }
