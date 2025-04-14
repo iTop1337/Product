@@ -22,7 +22,7 @@ public class Product {
 
     private Integer price_in_cents;
 
-    private boolean active;
+    private Boolean active;
 
     public Product(RequestProduct requestProduct){
         this.name = requestProduct.name();
