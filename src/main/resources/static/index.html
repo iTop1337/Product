@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Produtos</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+<h2 id="formTitle">Cadastrar Produto</h2>
+<form id="formProduto">
+    <input type="hidden" id="id"/>
+    <input type="text" id="nome" placeholder="Nome do produto" required/>
+    <input type="number" id="preco" placeholder="Preço (R$)" step="0.01" required/>
+    <button type="submit" id="btnSalvar">Salvar</button>
+</form>
+
+<h1>Produtos</h1>
+<table id="tabelaProdutos">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Nome</th>
+        <th>Preço</th>
+        <th>Ações</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- Modal de confirmação -->
+<div id="modalConfirmacao"
+     style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background-color:rgba(0,0,0,0.5);">
+    <div style="background:white; padding:20px; max-width:300px; margin:100px auto; border-radius:8px; text-align:center;">
+        <p>Deseja realmente excluir este produto?</p>
+        <button id="btnConfirmar">Confirmar</button>
+        <button onclick="fecharModal()">Cancelar</button>
+    </div>
+</div>
+
+<script>
+    const API_URL = "http://localhost:8080/product";
+
+    function editarProduto(id, name, price_in_cents) {
+        document.getElementById("id").value = id;
+        document.getElementById("nome").value = name;
+        document.getElementById("preco").value = (price_in_cents / 100).toFixed(2);
+        document.getElementById("btnSalvar").textContent = "Atualizar";
+        document.getElementById("formTitle").textContent = "Editar Produto";
+    }
+
+    async function carregarProdutos() {
+        try {
+            const resposta = await fetch(API_URL);
+            const produtos = await resposta.json();
+
+            const tbody = document.querySelector("#tabelaProdutos tbody");
+            tbody.innerHTML = "";
+
+            produtos.forEach(produto => {
+                const linha = `
+                    <tr>
+                        <td>${produto.id}</td>
+                        <td>${produto.name}</td>
+                        <td>R$ ${(produto.price_in_cents / 100).toFixed(2)}</td>
+                        <td>
+                            <button onclick="editarProduto('${produto.id}', '${produto.name}', '${produto.price_in_cents}')">Editar</button>
+                            <button onclick="abrirConfirmacao('${produto.id}')">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += linha;
+            });
+        } catch (erro) {
+            console.error("Erro ao carregar produtos:", erro);
+        }
+    }
+
+    async function salvarProduto(event) {
+        event.preventDefault();
+
+        const id = document.getElementById("id").value;
+        const nome = document.getElementById("nome").value;
+        const precoReais = parseFloat(document.getElementById("preco").value);
+        const precoCentavos = Math.round(precoReais * 100);
+
+        const novoProduto = {
+            name: nome,
+            price_in_cents: precoCentavos
+        };
+
+        const metodo = id ? "PUT" : "POST";
+        const url = id ? `${API_URL}/${id}` : API_URL;
+
+        await fetch(url, {
+            method: metodo,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(novoProduto)
+        });
+
+        document.getElementById("formProduto").reset();
+        document.getElementById("btnSalvar").textContent = "Salvar";
+        document.getElementById("formTitle").textContent = "Cadastrar Produto";
+        carregarProdutos();
+    }
+
+    document.getElementById("formProduto").addEventListener("submit", salvarProduto);
+
+    let idParaExcluir = null;
+
+    function abrirConfirmacao(id) {
+        idParaExcluir = id;
+        document.getElementById("modalConfirmacao").style.display = "block";
+    }
+
+    function fecharModal() {
+        idParaExcluir = null;
+        document.getElementById("modalConfirmacao").style.display = "none";
+    }
+
+    async function confirmarExclusao() {
+        if (idParaExcluir !== null) {
+            await fetch(`${API_URL}/${idParaExcluir}`, { method: "DELETE" });
+            fecharModal();
+            carregarProdutos();
+        }
+    }
+
+    document.getElementById("btnConfirmar").addEventListener("click", confirmarExclusao);
+
+    carregarProdutos();
+</script>
+
+</body>
+</html>

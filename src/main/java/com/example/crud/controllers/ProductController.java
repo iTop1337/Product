@@ -14,6 +14,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/product")
+@CrossOrigin(origins = "*")
 public class ProductController {
     @Autowired
     private ProductRepository repository;
@@ -32,10 +33,10 @@ public class ProductController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping
+    @PutMapping("/{id}")
     @Transactional
-    public ResponseEntity updateProject(@RequestBody @Validated RequestProduct data) {
-        Optional<Product> optionalProduct = repository.findById(data.id());
+    public ResponseEntity updateProject(@PathVariable String id, @RequestBody @Validated RequestProduct data) {
+        Optional<Product> optionalProduct = repository.findById(id);
         if (optionalProduct.isPresent()) {
             Product product = optionalProduct.get();
             product.setName(data.name());
